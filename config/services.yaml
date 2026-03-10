@@ -4,6 +4,9 @@
 # Files in the packages/ subdirectory configure your dependencies.
 # See also https://symfony.com/doc/current/service_container/import.html
 
+imports:
+    - { resource: 'services/filters.yaml' }
+
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
@@ -21,3 +24,18 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # Nuxt Generator Configuration
+    App\Generator\Config\GeneratorConfiguration:
+        factory: ['@App\Generator\Config\GeneratorConfigurationFactory', 'create']
+
+    # Filter Metadata Extractor needs API Platform filter locator
+    App\Generator\Extractor\FilterMetadataExtractor:
+        arguments:
+            $filterLocator: '@api_platform.filter_locator'
+
+    # API Platform interfaces - alias to their implementations
+    ApiPlatform\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface: '@api_platform.metadata.resource.name_collection_factory'
+    ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface: '@api_platform.metadata.resource.metadata_collection_factory'
+    ApiPlatform\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface: '@api_platform.metadata.property.name_collection_factory'
+    ApiPlatform\Metadata\Property\Factory\PropertyMetadataFactoryInterface: '@api_platform.metadata.property.metadata_factory'

@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Generator\TypeScript;
+
+use App\Generator\Writer\FileWriter;
+use App\Generator\Config\GeneratorConfiguration;
+
+/**
+ * Generates useSave composable — binds a save function to a reactive model.
+ */
+class UseSaveGenerator extends CoreGenerator
+{
+    public function generate(mixed $data = null): void
+    {
+        $content = $this->generateFileHeader('useSave composable — binds a save function to a reactive model');
+        $content .= $this->generateUseSaveContent();
+
+        $this->write('composables/useSave.ts', $content);
+    }
+
+    private function generateUseSaveContent(): string
+    {
+        return <<<'TS'
+import { ref, computed, type Ref, type ComputedRef } from 'vue'
+import { formatApiError, type ApiError, type ApiViolation } from '../core/apiError'
+
+/**
+ * Return type for useSave composable.
+ */
+export interface UseSaveReturn<TOutput> {
+  /** Whether a save operation is in progress */
+  saving: Ref<boolean>
+  /** All validation violations from the last error */
+  violations: ComputedRef<ApiViolation[]>
+  /** Check if a specific property has violations */
+  hasViolation: (propertyPath: string) => boolean
+  /** Get first violation message for a property */
+  getViolation: (propertyPath: string) => string | null
+  /** Get all violation messages for a property */
+  getViolations: (propertyPath: string) => string[]
+  /** Execute the save using current model value */
+  save: () => Promise<TOutput | null>
+  /** Clear violations and error state */
+  reset: () => void
+}
+
+/**
+ * Save composable that binds an API function to a reactive model.
+ *
+ * The caller is responsible for composing the right function:
+ * - Create: pass `createProgram` directly
+ * - Update: wrap with id `(input) => updateProgram(id, input)`
+ * - Replace: wrap with id `(input) => replaceProgram(id, input)`
+ *
+ * Non-validation errors (5xx, network) are shown as a toast automatically.
+ * Validation errors (422) are exposed via the violations helpers.
+ *
+ * @example
+ * ```typescript
+ * // Create
+ * const { save, saving, violations, hasViolation } = useSave(
+ *   createProgram,
+ *   form,
+ *   (program) => navigateTo(`/programs/${program.id}`),
+ * )
+ *
+ * // Update — wrap to bind id
+ * const { save, saving, violations } = useSave(
+ *   (input) => updateProgram(route.params.id, input),
+ *   form,
+ *   () => toast.add({ title: 'Saved!' }),
+ * )
+ *
+ * await save()
+ * ```
+ */
+export function useSave<TInput, TOutput>(
+  saveFn: (input: TInput) => Promise<TOutput>,
+  model: Ref<TInput>,
+  onSuccess?: (result: TOutput) => void | Promise<void>,
+  onError?: (error: ApiError) => void | Promise<void>,
+): UseSaveReturn<TOutput> {
+  const saving = ref(false)
+  const _error = ref<ApiError | null>(null)
+
+  const violations = computed(() => _error.value?.violations ?? [])
+
+  const hasViolation = (propertyPath: string): boolean =>
+    violations.value.some((v) => v.propertyPath === propertyPath)
+
+  const getViolation = (propertyPath: string): string | null =>
+    violations.value.find((v) => v.propertyPath === propertyPath)?.message ?? null
+
+  const getViolations = (propertyPath: string): string[] =>
+    violations.value.filter((v) => v.propertyPath === propertyPath).map((v) => v.message)
+
+  const reset = (): void => {
+    _error.value = null
+  }
+
+  const save = async (): Promise<TOutput | null> => {
+    saving.value = true
+    _error.value = null
+
+    try {
+      const result = await saveFn(model.value)
+      await onSuccess?.(result)
+      return result
+    } catch (err) {
+      const apiError = formatApiError(err)
+      _error.value = apiError
+
+      // Non-validation errors → toast (violations are shown inline via helpers)
+      if (apiError.violations.length === 0) {
+        try {
+          const toast = useToast()
+          toast.add({
+            title: apiError.title,
+            description: apiError.detail,
+            color: 'error',
+          })
+        } catch {
+          // useToast not available (outside Nuxt context)
+        }
+      }
+
+      await onError?.(apiError)
+      return null
+    } finally {
+      saving.value = false
+    }
+  }
+
+  return {
+    saving,
+    violations,
+    hasViolation,
+    getViolation,
+    getViolations,
+    save,
+    reset,
+  }
+}
+
+TS;
+    }
+}
+

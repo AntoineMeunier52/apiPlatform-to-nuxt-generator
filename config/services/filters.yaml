@@ -1,0 +1,114 @@
+services:
+    # User filters
+    user.search_filter:
+        parent: 'api_platform.doctrine.orm.search_filter'
+        arguments:
+            $properties:
+                email: 'partial'
+                firstName: 'partial'
+                lastName: 'partial'
+        tags: ['api_platform.filter']
+
+    user.date_filter:
+        parent: 'api_platform.doctrine.orm.date_filter'
+        arguments:
+            $properties:
+                createdAt: ~
+        tags: ['api_platform.filter']
+
+    user.order_filter:
+        parent: 'api_platform.doctrine.orm.order_filter'
+        arguments:
+            $properties:
+                createdAt: ~
+                email: ~
+                firstName: ~
+                lastName: ~
+        tags: ['api_platform.filter']
+
+    # Workout filters
+    workout.search_filter:
+        parent: 'api_platform.doctrine.orm.search_filter'
+        arguments:
+            $properties:
+                name: 'partial'
+                user: 'exact'
+                type: 'exact'
+        tags: ['api_platform.filter']
+
+    workout.date_filter:
+        parent: 'api_platform.doctrine.orm.date_filter'
+        arguments:
+            $properties:
+                date: ~
+        tags: ['api_platform.filter']
+
+    workout.order_filter:
+        parent: 'api_platform.doctrine.orm.order_filter'
+        arguments:
+            $properties:
+                date: ~
+                name: ~
+                duration: ~
+        tags: ['api_platform.filter']
+
+    # TrainingPlan filters
+    plan.search_filter:
+        parent: 'api_platform.doctrine.orm.search_filter'
+        arguments:
+            $properties:
+                name: 'partial'
+                user: 'exact'
+        tags: ['api_platform.filter']
+
+    plan.boolean_filter:
+        parent: 'api_platform.doctrine.orm.boolean_filter'
+        arguments:
+            $properties:
+                isActive: ~
+        tags: ['api_platform.filter']
+
+    plan.order_filter:
+        parent: 'api_platform.doctrine.orm.order_filter'
+        arguments:
+            $properties:
+                createdAt: ~
+                name: ~
+                durationWeeks: ~
+        tags: ['api_platform.filter']
+
+    # TrainingSession filters
+    training_session.search_filter:
+        parent: 'api_platform.doctrine.orm.search_filter'
+        arguments:
+            $properties:
+                status: 'exact'
+                user: 'exact'
+                workout: 'exact'
+                type: 'exact'
+        tags: ['api_platform.filter']
+
+    training_session.boolean_filter:
+        parent: 'api_platform.doctrine.orm.boolean_filter'
+        arguments:
+            $properties:
+                isPublic: ~
+        tags: ['api_platform.filter']
+
+    training_session.date_filter:
+        parent: 'api_platform.doctrine.orm.date_filter'
+        arguments:
+            $properties:
+                startedAt: ~
+                completedAt: ~
+        tags: ['api_platform.filter']
+
+    training_session.order_filter:
+        parent: 'api_platform.doctrine.orm.order_filter'
+        arguments:
+            $properties:
+                startedAt: ~
+                completedAt: ~
+                durationSeconds: ~
+                totalVolumeKg: ~
+        tags: ['api_platform.filter']
